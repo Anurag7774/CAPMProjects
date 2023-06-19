@@ -1,0 +1,17 @@
+   const cds = require('@sap/cds')
+    module.exports = srv => {
+        srv.after(['CREATE', 'UPDATE', 'DELETE'], 'Reviews', async (_, req) => {
+            const { subject } = req.data
+            const tx = cds.transaction(req)
+
+            const result = await tx.run(SELECT.one(['round(avg(rating),1) as
+rating']).from('proj2.db.Reviews').where({ subject }))
+            if (result) {
+                req.on('succeeded', () => {
+                    const payload = { subject, rating: result.rating }
+                              cds.run(UPDATE('proj2.db.Books').set({rating: result.rating}).where({ID:
+payload.subject }))
+                })
+            }
+        })
+    }
